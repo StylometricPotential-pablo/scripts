@@ -15,7 +15,8 @@ import re
 
 class documentFeatures():
 
-    # punctuation = ".?\"',-!:;([/"
+    punctuationList = ".?\"',-!:;()[]/"
+
     # punctuation2 = ".?\"',-!:;)]/" 
 
     def calculate_hapax_legomena(self, path):
@@ -33,11 +34,25 @@ class documentFeatures():
 
     def calculate_texts(self, path):
         
+        totalCharacters = 0
         with open(path, 'r') as f:
             for line in f:
                 for word in line.strip(punctuation).split():
-
+                    if (len(word)<4):
+                        self.short_word_number+=1
+                    if (word in self.uni_grams):
+                        self.uni_grams[word]+=1
+                    else:
+                        self.uni_grams[word]=1
                     self.word_number+=1
+        self.uni_grams = dict(sorted(self.uni_grams.items(), key=lambda item: item[1], reverse=True))
+
+        i = 0
+        for key in self.uni_grams.keys():
+            if i == 100:
+                break
+            self.uni_gram_frequency.append(self.uni_grams[key])
+            i+=1
 
 
     def calculate(self, path):
@@ -59,6 +74,8 @@ class documentFeatures():
         self.dislegomenon = []
         self.richness = 0           #measure of text richness
         self.twelve_freq = [0] * 12 #frequency of 12 punctuation marks
+        self.uni_grams = {}         #most common words
+        self.uni_gram_frequency = []
 
         
         self.calculate(path)
@@ -67,22 +84,138 @@ class documentFeatures():
 
 
 
-jo = documentFeatures("ac1.txt")
-jo2 = documentFeatures("pg1.txt")
-jo3 = documentFeatures("pablo1.txt")
-
-print(len(jo.hapax_legomena))
-print(len(jo.dislegomenon))
-print(len(jo.hapax_legomena)/jo.word_number)
-print(len(jo.dislegomenon)/jo.word_number)
-
-print(len(jo2.hapax_legomena))
-print(len(jo2.dislegomenon))
-print(len(jo2.hapax_legomena)/jo2.word_number)
-print(len(jo2.dislegomenon)/jo2.word_number)
+import pandas as pd
 
 
-print(len(jo3.hapax_legomena))
-print(len(jo3.dislegomenon))
-print(len(jo3.hapax_legomena)/jo2.word_number)
-print(len(jo3.dislegomenon)/jo2.word_number)
+
+col_names = ['hapax', 'dis', 'words', 'short']
+
+for i in range(100):
+    col_names.append(str(i))
+col_names.append('label')
+
+
+feature_cols = ['hapax', 'dis', 'words', 'short']
+for i in range(100):
+    feature_cols.append(str(i))
+
+# load dataset
+pima = pd.read_csv("new_file.csv", header=None, names=col_names)
+print(pima.head)
+
+X = pima[feature_cols] # Features
+Y = pima.label
+
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.1, random_state=16)
+
+from sklearn.linear_model import LogisticRegression
+
+# # instantiate the model (using the default parameters)
+logreg = LogisticRegression(random_state=16)
+
+# fit the model with data
+logreg.fit(X_train, y_train)
+
+y_pred = logreg.predict(X_test)
+
+print(type(logreg))
+
+print(logreg.predict(X_test))
+
+
+object = documentFeatures("documents/ac/ac4.txt")
+
+
+dct = {
+    'hapax': [len(object.hapax_legomena)], 
+    'dis': [len(object.dislegomenon)], 
+    'words': [object.word_number], 
+    'short': [object.short_word_number]
+}
+for i in range(100):
+    dct[str(i)] = object.uni_gram_frequency[i]
+
+# Creating pandas dataframe from numpy array
+dataset = pd.DataFrame(dct)
+
+print(logreg.predict(dataset))
+# print(X_test)
+# print(object.uni_grams)
+
+
+# print(object.uni_gram_frequency)
+# print(dataset)
+data = []
+
+import csv
+
+
+
+
+for i in range(1,5):
+    if i==4:
+        continue
+    jo = documentFeatures("documents/ac/ac" + str(i) + ".txt")
+    a = []
+    a.append(len(jo.hapax_legomena))
+    a.append(len(jo.dislegomenon))
+    a.append(jo.word_number)
+    a.append(jo.short_word_number)
+    a.extend(jo.uni_gram_frequency)
+    a.append(0)
+    data.append(a)
+
+for i in range(1,7):
+    
+
+    jo = documentFeatures("documents/pg/pg" + str(i) + ".txt")
+    a = []
+    a.append(len(jo.hapax_legomena))
+    a.append(len(jo.dislegomenon))
+    a.append(jo.word_number)
+    a.append(jo.short_word_number)
+    a.extend(jo.uni_gram_frequency)
+    a.append(1)
+    data.append(a)
+
+
+for i in range(1,6):
+
+    jo = documentFeatures("documents/pablo/pablo" + str(i) + ".txt")
+    a = []
+    a.append(len(jo.hapax_legomena))
+    a.append(len(jo.dislegomenon))
+    a.append(jo.word_number)
+    a.append(jo.short_word_number)
+    a.extend(jo.uni_gram_frequency)
+    a.append(2)
+    data.append(a)
+
+for i in range(1,4):
+
+    jo = documentFeatures("documents/gpt/gpt" + str(i) + ".txt")
+    a = []
+    a.append(len(jo.hapax_legomena))
+    a.append(len(jo.dislegomenon))
+    a.append(jo.word_number)
+    a.append(jo.short_word_number)
+    a.extend(jo.uni_gram_frequency)
+    a.append(3)
+    data.append(a)
+
+
+import csv
+
+
+with open("new_file.csv","w+") as my_csv:
+    csvWriter = csv.writer(my_csv,delimiter=',')
+    csvWriter.writerows(data)
+
+
+
+
+
+
+
