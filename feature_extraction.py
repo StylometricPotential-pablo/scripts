@@ -225,12 +225,14 @@ for k in range(len(coefficients[0])):
     newList.append(sum)
 
 print(coefficients)
+
+ooo = 0
 for i in range(0,4):
     color = colors[i]
     vals = coefficients[i]
-    ooo = 0
     currentEmbds = embs[i]
     
+
     joo = 0
     for lsst in data[str(i)]:
         sum = 0
@@ -239,11 +241,10 @@ for i in range(0,4):
         print(sum * -1 -1)
 
         sumOfAllVector = 0
-        print(type(currentEmbds))
 
-        for k in range(len(currentEmbds)-1):
+        for k in range(len(currentEmbds)-10):
             # sumOfAllVector+= float(currentEmbds[k]) * vals[k]
-            sumOfAllVector+= float(newList[k]) * vals[k]
+            sumOfAllVector+= float(newList[k]) * float(currentEmbds[joo])
 
 
 
