@@ -32,8 +32,7 @@ class documentFeatures():
 
     punctuationList = ".?\"',-!:;()[]/"
 
-    # punctuation2 = ".?\"',-!:;)]/" 
-
+    # Calculating the relative rarity of words (doesn't scale well with size) 
     def calculate_hapax_legomena(self, path):
         file = open(path)
         list_of_words = re.findall('\w+', file.read().lower())
@@ -53,8 +52,6 @@ class documentFeatures():
             
             
         doc = []
-
-        totalCharacters = 0
         with open(path, 'r') as f:
 
             for line in f:
@@ -78,6 +75,28 @@ class documentFeatures():
             i+=1
 
         input = " ".join(doc)
+        bi_grams = {}
+
+        for i in range(len(doc)-1):
+            thisGram = doc[i] + doc[i+1]
+            thisGram = thisGram.lower()
+            if thisGram in bi_grams:
+                bi_grams[thisGram]+=1
+            else:
+                bi_grams[thisGram]=1
+        bi_grams = dict(sorted(bi_grams.items(), key=lambda item: item[1], reverse=True))
+
+
+        self.bi_grams = bi_grams
+
+        i = 0
+        for key in self.bi_grams.keys():
+            if i == 20:
+                break
+            self.bi_gram_frequency.append(self.bi_grams[key])
+            i+=1
+        print(bi_grams) 
+        print(self.bi_gram_frequency)
         # print(input)
 
         response = openai.Embedding.create(
@@ -88,9 +107,6 @@ class documentFeatures():
 
 
         self.embedding = embeddings
-        # print(embeddings)
-
-        # self.vector = np.mean(Word2Vec[doc], axis=0)
 
 
     def calculate(self, path):
@@ -116,6 +132,8 @@ class documentFeatures():
         self.uni_gram_frequency = []
         self.vector = 0
         self.embedding = 0
+        self.bi_grams = {}
+        self.bi_gram_frequency = []
 
         
         self.calculate(path)
@@ -130,13 +148,13 @@ import pandas as pd
 
 col_names = ['hapax', 'dis', 'words', 'short']
 
-for i in range(100):
+for i in range(120):
     col_names.append(str(i))
 col_names.append('label')
 
 
 feature_cols = ['hapax', 'dis', 'words', 'short']
-for i in range(100):
+for i in range(120):
     feature_cols.append(str(i))
 
 # load dataset
@@ -176,7 +194,11 @@ dct = {
 }
 for i in range(100):
     dct[str(i)] = object.uni_gram_frequency[i]
+for i in range(20):
+    dct[str(100+i)] = object.bi_gram_frequency[i]
 
+# for i in range(20):
+#     dct[str(i)] = object.bi_gram_frequency[i]
 # Creating pandas dataframe from numpy array
 dataset = pd.DataFrame(dct)
 
@@ -204,7 +226,7 @@ def getVal(index, substract):
 
 
 import matplotlib.pyplot as plt
-colors = ['green', 'red', 'black', 'blue']
+colors = ['green', 'red', 'black', 'blue', 'blue']
 
 coefficients = logreg.coef_
 
@@ -227,13 +249,14 @@ for k in range(len(coefficients[0])):
 print(coefficients)
 
 ooo = 0
-for i in range(0,4):
+for i in range(0,5):
     color = colors[i]
     vals = coefficients[i]
     currentEmbds = embs[i]
     
 
     joo = 0
+    print(str(i)+ " " + str(len(data[str(i)])))
     for lsst in data[str(i)]:
         sum = 0
         for val in lsst:
@@ -257,6 +280,9 @@ for i in range(0,4):
     print(i)
 
 
+# embedks = object.embedding
+
+
 plt.show()
 
 
@@ -264,117 +290,87 @@ plt.show()
 
 
 
-color = 'green'
-# print("0: " + str(getVal(0, False)))
-# print("1: " + str(getVal(1, False)))
-# print("2: " + str(getVal(2, False)))
-# print("3: " + str(getVal(3, False)))
+data = []
+
+import csv
 
 
-# print(X_test)
-# print(object.uni_grams)
+dct = {}
+
+lst = []
+
+def appendValues(document, index):
+    newLst = []
+    newLst.append(len(document.hapax_legomena)/document.word_number)
+    newLst.append(len(document.dislegomenon)/document.word_number)
+    newLst.append(document.word_number)
+    newLst.append(document.short_word_number)
+    newLst.extend(document.uni_gram_frequency)
+    newLst.extend(document.bi_gram_frequency)
+    newLst.append(index)
+    return newLst
 
 
-# print(object.uni_gram_frequency)
-# print(dataset)
 
+for i in range(1,5):
+    if i==4:
+        continue
+    current_docuement = documentFeatures("documents/ac/ac" + str(i) + ".txt")
+    data.append(appendValues(current_docuement, 0))
+    lst.append(current_docuement.embedding)
 
+dct[0]=lst
 
-
-
-# data = []
-
-# import csv
-
-
-# dct = {}
-
-# lst = []
-
-# for i in range(1,5):
-#     if i==4:
-#         continue
-#     jo = documentFeatures("documents/ac/ac" + str(i) + ".txt")
-#     a = []
-#     a.append(len(jo.hapax_legomena))
-#     a.append(len(jo.dislegomenon))
-#     a.append(jo.word_number)
-#     a.append(jo.short_word_number)
-#     a.extend(jo.uni_gram_frequency)
-#     a.append(0)
-#     data.append(a)
-#     lst.append(jo.embedding)
-
-# dct[0]=lst
-
-# import json
+import json
 
 
 
 
-# lst = []
-# for i in range(1,7):
-    
+lst = []
+for i in range(1,7):
+    current_docuement = documentFeatures("documents/pg/pg" + str(i) + ".txt")
+    data.append(appendValues(current_docuement, 1))
+    lst.append(current_docuement.embedding)
 
-#     jo = documentFeatures("documents/pg/pg" + str(i) + ".txt")
-#     a = []
-#     a.append(len(jo.hapax_legomena))
-#     a.append(len(jo.dislegomenon))
-#     a.append(jo.word_number)
-#     a.append(jo.short_word_number)
-#     a.extend(jo.uni_gram_frequency)
-#     a.append(1)
-#     data.append(a)
-#     lst.append(jo.embedding)
-
-# dct[1]=lst
+dct[1]=lst
 
 
-# lst = []
-# for i in range(1,6):
+lst = []
+for i in range(1,6):
 
-#     jo = documentFeatures("documents/pablo/pablo" + str(i) + ".txt")
-#     a = []
-#     a.append(len(jo.hapax_legomena))
-#     a.append(len(jo.dislegomenon))
-#     a.append(jo.word_number)
-#     a.append(jo.short_word_number)
-#     a.extend(jo.uni_gram_frequency)
-#     a.append(2)
-#     data.append(a)
-#     lst.append(jo.embedding)
+    current_docuement = documentFeatures("documents/pablo/pablo" + str(i) + ".txt")
+    data.append(appendValues(current_docuement, 2))
+    lst.append(current_docuement.embedding)
 
-# dct[2]=lst
+dct[2]=lst
 
 
 
-# lst = []
-# for i in range(1,4):
+lst = []
+for i in range(1,4):
 
-#     jo = documentFeatures("documents/gpt/gpt" + str(i) + ".txt")
-#     a = []
-#     a.append(len(jo.hapax_legomena))
-#     a.append(len(jo.dislegomenon))
-#     a.append(jo.word_number)
-#     a.append(jo.short_word_number)
-#     a.extend(jo.uni_gram_frequency)
-#     a.append(3)
-#     data.append(a)
-#     lst.append(jo.embedding)
+    current_docuement = documentFeatures("documents/gpt/gpt" + str(i) + ".txt")
+    data.append(appendValues(current_docuement, 3))
+    lst.append(current_docuement.embedding)
 
-# dct[3]=lst
+dct[3]=lst
+lst = []
+current_docuement = documentFeatures("documents/gpt/gpt5.txt")
+data.append(appendValues(current_docuement, 4))
+lst.append(current_docuement.embedding)
+dct[4]=lst
 
 
-# with open('embeddings0.json', 'w') as fp:
-#     json.dump(dct, fp)
+with open('embeddings.json', 'w') as fp:
+    json.dump(dct, fp)
 
 
-# import csv
+import csv
 
 
-# with open("new_file.csv","w+") as my_csv:
-#     csvWriter = csv.writer(my_csv,delimiter=',')
-#     csvWriter.writerows(data)
+with open("new_file.csv","w+") as my_csv:
+    csvWriter = csv.writer(my_csv,delimiter=',')
+    csvWriter.writerows(data)
 
 
 
